@@ -149,6 +149,33 @@ async function markAsCompleted(id) {
   fetchDashboardData();
 }
 
+async function addStock() {
+  if (!stockInput) return;
+
+  const { error } = await supabase
+    .from("distributor_stock")
+    .update({
+      current_stock: (stockData?.current_stock || 0) + Number(stockInput),
+    })
+    .eq("distributor_name", stockData.distributor_name);
+
+  if (!error) {
+    // NEW: log this addition so Government can audit received vs delivered
+    await supabase.from("stock_updates").insert([
+      {
+        distributor_name: stockData.distributor_name,
+        district: distributor?.district || null,
+        cylinder_type: "Standard",
+        quantity: Number(stockInput),
+        action: "Added",
+      },
+    ]);
+
+    setStockInput("");
+    fetchDashboardData();
+  }
+}
+
 
   function handleLogout() {
     localStorage.removeItem("distributorId");
